@@ -17,7 +17,7 @@ const el = (selector, ...args) => {
 
   var node = document.createElement(selector.length > 0 ? selector : "div");
   for (let prop in attrs) {
-    if (attrs.hasOwnProperty(prop) && attrs[prop] != undefined) {
+    if (Object.hasOwn(attrs, prop) && attrs[prop] != undefined) {
       if (prop.indexOf("data-") == 0) {
         let dataProp = prop.substring(5).replace(/-([a-z])/g, function(g) { return g[1].toUpperCase(); });
         node.dataset[dataProp] = attrs[prop];

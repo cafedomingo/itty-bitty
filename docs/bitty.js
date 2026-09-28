@@ -1,3 +1,4 @@
+/* global LZMA, pako */
 const padForBase64 = (s, c = " ") => s.padEnd(s.length + (3 - s.length % 3) % 3, c)
 const HEAD_TAGS = (prefixes) => {
   let tags = ['<base target="_top">']
@@ -7,7 +8,7 @@ const HEAD_TAGS = (prefixes) => {
 const HEAD_TAGS_EXTENDED = () => btoa(padForBase64(`<meta charset="utf-8"><meta name="viewport" content="width=device-width"><base target="_top"><style type="text/css">body{margin:0 auto;padding:12vmin 10vmin;max-width:35em;line-height:1.5em;font-family:-apple-system,BlinkMacSystemFont,sans-serif;word-wrap:break-word;}@media(prefers-color-scheme: dark){body{color:white;background-color:black;}}</style>`));
 
 const dataUrlRE =
-/^data:(?<mediatype>(?<type>[a-z]+)\/(?<subtype>[a-z+\-]+))?(?<params>(?:;[^;,]+=[^;,]+)*)?(?:;(?<encoding>\w+64))?,(?<data>.*)$/
+/^data:(?<mediatype>(?<type>[a-z]+)\/(?<subtype>[a-z+-]+))?(?<params>(?:;[^;,]+=[^;,]+)*)?(?:;(?<encoding>\w+64))?,(?<data>.*)$/
 
 ///^\s*data:([a-z]+\/[a-z]+(;[a-z\-]+\=[a-z\-]+)?)?(;base64)?,[a-z0-9\!\$\&\'\,\(\)\*\+\,\;\=\-\.\_\~\:\@\/\?\%\s]*\s*$/i;
 
@@ -56,7 +57,7 @@ class DataURL {
 
       this.dataPrefix = HEAD_TAGS_EXTENDED();
       // todo: gzip starts with 0x1f8b
-      let encoding = url.startsWith("XQA") ? bitty.LZMA_MARKER : bitty.GZIP_MARKER;
+      let encoding = url.startsWith("XQA") ? LZMA_MARKER : GZIP_MARKER;
       url = `data:text/html;charset=utf-8;format=${encoding};base64,${url}`;
     }
     
@@ -83,10 +84,9 @@ class DataURL {
     if (this.params) Object.entries(this.params).forEach( e => { if (!e[0].startsWith("_")) urlString += `;${e[0]}=${e[1]}`})
     if (this.encoding) urlString += ";" + this.encoding
 
-    if (!this.encoding && this.dataPrefix) {
-        this.dataPrefix = atob(this.dataPrefix);
-    }
-    urlString += "," + (this.dataPrefix || '') + this.data;
+    // dataPrefix is stored base64-encoded; plain data urls need it decoded. Don't mutate it, since href is read more than once.
+    let prefix = this.dataPrefix && !this.encoding ? atob(this.dataPrefix) : (this.dataPrefix || '');
+    urlString += "," + prefix + this.data;
     return urlString;
   }
 
@@ -110,7 +110,7 @@ class DataURL {
     // Decrypt if needed
     if (this.params.cipher) {
       try {
-        bytes = await decryptData(this.params.cipher, bytes, this.params.password);
+        bytes = await decryptData(this.params.cipher, bytes, this.params.password, this.params.kdf);
       } catch (e) {
         this.error = "Decryption Error - Incorrect password?"
         return;      
@@ -140,9 +140,8 @@ class DataURL {
     let compressedData = await compressData(this.rawData, format);
 
     if (this.params.cipher && this.params._password) {
-      let encryptedData = await encryptData(this.params.cipher, this.params._password, compressedData);
-      console.log("ENCRYPTED", compressedData, encryptedData)
-      compressedData = encryptedData
+      this.params.kdf = KDF_PBKDF2;
+      compressedData = await encryptData(this.params.cipher, this.params._password, compressedData);
     }
 
     var base64String
@@ -162,12 +161,14 @@ class DataURL {
   }
 
   parseDom = async () => {
+    const parseableTypes = ["text/html", "text/xml", "application/xml", "application/xhtml+xml", "image/svg+xml"];
+    if (!parseableTypes.includes(this.mediatype)) return;
     try {
-
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(`<?xml version="1.0" encoding="UTF-8"?>` + atob(this.data), this.mediatype);
-      return doc;
-    } catch (e) {}
+      const text = this.encoding ? byteArrayToString(base64ToByteArray(this.data)) : this.data;
+      return new DOMParser().parseFromString(text, this.mediatype);
+    } catch (e) {
+      console.debug("Could not parse content", e);
+    }
   }
 }
 
@@ -221,7 +222,7 @@ async function compressData(data, encoding = GZIP_MARKER, callback) {
   if (encoding == GZIP_MARKER) {
     return compressDataGzip(data);
   } else if (encoding == BROT_MARKER) {
-    
+    // Brotli is decode-only for now
   } else if (encoding == LZMA_MARKER) {
     return new Promise(function(resolve, reject) {
       LZMA.compress(data, 9, function(result, error) {
@@ -234,12 +235,10 @@ async function compressData(data, encoding = GZIP_MARKER, callback) {
 
 function stringToByteArray(string) {
   return new TextEncoder().encode(string);
-  return Uint8Array.from(string, c => c.charCodeAt(0));
 }
 
 function byteArrayToString(bytes) {
-  return new TextDecoder().decode(bytes); 
-  return String.fromCharCode.apply(null, new Uint8Array(bytes));
+  return new TextDecoder().decode(bytes);
 }
 
 async function decompressDataGzip(data) {
@@ -296,88 +295,90 @@ async function decompressData(data, encoding, callback) {
 }
 
 
-async function encryptData(cipher, pass, base64) {
-  let encrypted = await subtleEncryptData(base64, pass);
-  return encrypted
-  return new Promise((resolve, reject) => {
-    loadScript("/js/crypto-js.min.js").then(() => {
-      console.log("encrypting", cipher)
-      let encrypted = CryptoJS[cipher.toUpperCase()].encrypt(base64, pass);
-      return resolve(CryptoJS.enc.Base64.stringify(encrypted));
-    })
-  })
+async function encryptData(cipher, pass, data) {
+  return subtleEncryptData(data, pass);
 }
-async function decryptData(cipher, base64, password) {
+
+async function decryptData(cipher, data, password, kdf) {
   console.log("🔐 Decrypting data:", cipher);
   let pass = password || prompt("This page is encrypted. What's the passcode?");
-  if (!pass) return (base64);
-  return subtleDecryptData(base64, pass)
-  return new Promise((resolve, reject) => {
-    loadScript("/js/crypto-js.min.js").then(() => {
-      var words = CryptoJS.enc.Base64.parse(base64);
-      let decrypted = CryptoJS[cipher.toUpperCase()].decrypt(words, pass);
-      console.log(decrypted, CryptoJS.enc.Base64.stringify(decrypted))
-      return resolve(CryptoJS.enc.Base64.stringify(decrypted));
-    })
-  })
-}
-/**
- * Concatenate two buffers
- * @param {Uint8Array} buffer1 - first buffer
- * @param {Uint8Array} buffer2 - second buffer
- * @returns 
- */
-function concatBuffers(buffer1, buffer2) {
-  const result = new Uint8Array(buffer1.byteLength + buffer2.byteLength)
-  result.set(new Uint8Array(buffer1), 0)
-  result.set(new Uint8Array(buffer2), buffer1.byteLength)
-  return result.buffer
+  if (!pass) return data;
+  if (kdf == KDF_PBKDF2) return subtleDecryptData(data, pass);
+  return legacyDecryptData(data, pass);
 }
 
 /**
- * Encrypts data using AES-GCM with supplied password, for decryption with aesGcmDecrypt().
+ * Concatenate buffers
+ * @param {...Uint8Array} buffers
+ * @returns {ArrayBuffer}
+ */
+function concatBuffers(...buffers) {
+  const result = new Uint8Array(buffers.reduce((n, b) => n + b.byteLength, 0));
+  let offset = 0;
+  for (const b of buffers) {
+    result.set(new Uint8Array(b), offset);
+    offset += b.byteLength;
+  }
+  return result.buffer;
+}
+
+// Links marked kdf=pbkdf2 derive the AES key with PBKDF2 over a random salt.
+// Changing the iteration count would break existing links, so a new kdf name is needed for that.
+const KDF_PBKDF2 = "pbkdf2";
+const PBKDF2_ITERATIONS = 600000; // OWASP recommendation for PBKDF2-HMAC-SHA256
+const SALT_LENGTH = 16;
+const IV_LENGTH = 12;
+
+async function deriveKey(password, salt, usage) {
+  const baseKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", hash: "SHA-256", salt, iterations: PBKDF2_ITERATIONS },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    [usage]
+  );
+}
+
+/**
+ * Encrypts data with AES-GCM using a PBKDF2-derived key.
  * @param   {Uint8Array} data - Data to be encrypted.
  * @param   {String} password - Password to use to encrypt plaintext.
- * @param   {String} [cipher=aes-gcm] - Algorithm to use.
- * @returns {Uint8Array} Encrypted data.
- * @example const encryptedData = await dataEncrypt(uint8array, 'password');
+ * @returns {ArrayBuffer} salt (16 bytes) + iv (12 bytes) + ciphertext.
  */
- async function subtleEncryptData(data, password, cipher = 'aes-gcm') {
-  const pwUtf8 = new TextEncoder().encode(password); // encode password as UTF-8
-  const pwHash = await crypto.subtle.digest('SHA-256', pwUtf8); // hash the password
-  const iv = crypto.getRandomValues(new Uint8Array(12)); // get 96-bit random iv
-  const alg = { name: cipher.toUpperCase(), iv: iv }; // specify algorithm to use
-  const key = await crypto.subtle.importKey('raw', pwHash, alg, false, ['encrypt']); // generate key from pw
-
-  const ctBuffer = await crypto.subtle.encrypt(alg, key, data); // encrypt data using key 
-  return concatBuffers(iv, new Uint8Array(ctBuffer)); // ciphertext as byte array
+async function subtleEncryptData(data, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+  const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+  const key = await deriveKey(password, salt, "encrypt");
+  const ctBuffer = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);
+  return concatBuffers(salt, iv, ctBuffer);
 }
 
 /**
-* Decrypts ciphertext encrypted with dataEncrypt() using supplied password.
-* @param   {Uint8Array} data - Ciphertext to be decrypted.
-* @param   {String} password - Password to use to decrypt ciphertext.
-* @param   {String} [cipher=aes-gcm] - Algorithm to use.
-* @returns {Uint8Array} Decrypted data.
-* @example const data = await aesGcmDecrypt(uint8array, 'password');
-*/
-async function subtleDecryptData(data, password, cipher = 'aes-gcm') {
-  const pwUtf8 = new TextEncoder().encode(password); // encode password as UTF-8
-  const pwHash = await crypto.subtle.digest('SHA-256', pwUtf8); // hash the password
-  const iv = new Uint8Array(data.slice(0,12)); // decode base64 iv
-  const alg = { name: cipher.toUpperCase(), iv: iv }; // specify algorithm to use
-  const key = await crypto.subtle.importKey('raw', pwHash, alg, false, ['decrypt']); // generate key from pw
-
-  const ctUint8 = new Uint8Array(data.slice(12)); // decode base64 ciphertext
-
-  const plainBuffer = await crypto.subtle.decrypt(alg, key, ctUint8); // decrypt ciphertext using key
+ * Decrypts data encrypted with subtleEncryptData().
+ * @param   {Uint8Array} data - salt + iv + ciphertext.
+ * @param   {String} password - Password used to encrypt.
+ * @returns {Uint8Array} Decrypted data.
+ */
+async function subtleDecryptData(data, password) {
+  const salt = data.slice(0, SALT_LENGTH);
+  const iv = data.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
+  const key = await deriveKey(password, salt, "decrypt");
+  const plainBuffer = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data.slice(SALT_LENGTH + IV_LENGTH));
   return new Uint8Array(plainBuffer);
-
 }
 
-
-
-
+/**
+ * Decrypts links made before kdf=pbkdf2 existed (key = unsalted SHA-256 of the password).
+ * Kept only so old links still open; new links never use it.
+ */
+async function legacyDecryptData(data, password) {
+  const pwHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(password));
+  const iv = data.slice(0, IV_LENGTH);
+  const key = await crypto.subtle.importKey("raw", pwHash, "AES-GCM", false, ["decrypt"]);
+  const plainBuffer = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data.slice(IV_LENGTH));
+  return new Uint8Array(plainBuffer);
+}
 
 function infoForDataURL(url) {
   return new DataURL(url);
@@ -415,7 +416,7 @@ function loadScript(src, type, callback) {
 
 // iMessage incorrectly handles urls with more than 301 sequential non-breakable characters, so we introduce = to prevent this
 function escapeStringForIMessage(str) {
-  var matches = str.match(/[^\/+=]{1,300}/g);
+  var matches = str.match(/[^/+=]{1,300}/g);
   if (matches) str = matches.join("=")
   return str;
 }
@@ -459,8 +460,7 @@ async function hashString(string, base = 36) {
   }
 
   const hashAsBase64 = btoa(String.fromCharCode.apply(null, uint8ViewOfHash));
-  hashAsBase64.replace(/=/g,'').replace(/[\+\/+]/g, "-").toLowerCase();
-  return hashAsBase64; 
+  return hashAsBase64.replace(/=/g,'').replace(/[+/]/g, "-").toLowerCase();
 }
 
 
@@ -587,7 +587,7 @@ const el = (selector, ...args) => {
 
   var node = document.createElement(selector.length > 0 ? selector : "div");
   for (let prop in attrs) {
-    if (attrs.hasOwnProperty(prop) && attrs[prop] != undefined) {
+    if (Object.hasOwn(attrs, prop) && attrs[prop] != undefined) {
       if (prop.indexOf("data-") == 0) {
         let dataProp = prop.substring(5).replace(/-([a-z])/g, function(g) { return g[1].toUpperCase(); });
         node.dataset[dataProp] = attrs[prop];

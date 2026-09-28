@@ -8,8 +8,6 @@ function decodeURL(s) {
   return atob(s.replace(/=/g,''));
 }
 
-function atou(b64) { return decodeURIComponent(escape(atob(b64))); }
-function utoa(data) { return btoa(unescape(encodeURIComponent(data))); }
 
 function pathToMetadata(path) {
   let components = path.substring(1).split("/");
@@ -25,8 +23,13 @@ function pathToMetadata(path) {
   return info;
 }
 
-function mProp(prop, content) { return `<meta property="${prop}" content="${content}"/>` }
-function mName(name, content) { return `<meta name="${name}" content="${content}"/>` }
+// Every value below comes from the request path, so it must be escaped before going into HTML.
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+function mProp(prop, content) { return `<meta property="${prop}" content="${escapeHTML(content)}"/>` }
+function mName(name, content) { return `<meta name="${name}" content="${escapeHTML(content)}"/>` }
 
 // Valid URL Chars A-Za-z0-9-._~:?@!$&()*;=+/
 export default async (request, context) => {
@@ -48,7 +51,7 @@ export default async (request, context) => {
         let info = pathToMetadata(path)
 
         let content = ['<meta charset="UTF-8">'];
-        if (info.title) { content.push(`<title>${info.title}</title>`,mProp("og:title", info.title)) }
+        if (info.title) { content.push(`<title>${escapeHTML(info.title)}</title>`,mProp("og:title", info.title)) }
         if (info.s) { content.push(mProp("og:site_name", info.s)) }
         if (info.t) { content.push(mProp("og:type", info.t)) }
         if (info.d) { content.push(mProp("og:description", info.d),mName("description",info.d)) }
@@ -57,20 +60,20 @@ export default async (request, context) => {
         if (info.i) {
           info.i = decodeURL(info.i)
           if (!info.i.startsWith("http")) info.i = "/.netlify/functions/rasterize/" + info.i
-          content.push(mProp("og:image", info.i)); 
-          if (info.iw) content.push(mProp("og:image:width", info.iw)); 
-          if (info.ih) content.push(mProp("og:image:width", info.ih)); 
+          content.push(mProp("og:image", info.i));
+          if (info.iw) content.push(mProp("og:image:width", info.iw));
+          if (info.ih) content.push(mProp("og:image:height", info.ih));
           content.push(mName("twitter:card", "summary_large_image"));
         } 
         if (info.v) {
-          content.push(mProp("og:video", decodeURL(info.v))); 
-          if (info.vw) content.push(mProp("og:image:width", info.vw)); 
-          if (info.vh) content.push(mProp("og:image:width", info.vh)); 
+          content.push(mProp("og:video", decodeURL(info.v)));
+          if (info.vw) content.push(mProp("og:video:width", info.vw));
+          if (info.vh) content.push(mProp("og:video:height", info.vh));
         } 
         if (info.f) { // Favicon: URL Encoded
           if (info.f.length > 9){
             info.f = decodeURL(info.f);
-            content.push(`<link rel="icon" type="image/png" href="${info.f}">`);
+            content.push(`<link rel="icon" type="image/png" href="${escapeHTML(info.f)}">`);
           } else {
             let codepoints = Array.from(info.f).map(c => c.codePointAt(0).toString(16));
             content.push(`<link rel="icon" type="image/png" href="https://fonts.gstatic.com/s/e/notoemoji/14.0/${codepoints.join("_")}/128.png">`);

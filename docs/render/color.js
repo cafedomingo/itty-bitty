@@ -1,3 +1,4 @@
+/* global hueCanvas, lumCanvas */
 let script = window.script;
 
 // import Color from "https://colorjs.io/dist/color.js";
@@ -20,7 +21,7 @@ let currentColor;
       do {
           curleft += obj.offsetLeft;
           curtop += obj.offsetTop;
-      } while (obj = obj.offsetParent);
+      } while ((obj = obj.offsetParent));
       return { x: curleft, y: curtop };
   }
   return undefined;

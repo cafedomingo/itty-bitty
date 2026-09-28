@@ -115,7 +115,7 @@ function render() {
   } else if (params.body.match(/MECARD:/)){
     document.body.appendChild(el("#arc-theme"));
     let queryString = params.body.substring(7);
-    queryString = queryString.split(";").map(line => line.replace(/\:/, "=")).join("&");
+    queryString = queryString.split(";").map(line => line.replace(/:/, "=")).join("&");
 
     let searchParams = new URLSearchParams(queryString);
     

@@ -1,3 +1,4 @@
+/* global el, renderScriptContent */
   import * as bitty from '/bitty.js';
   import * as bitty_menu from '/bitty-menu.js';
 
@@ -232,8 +233,6 @@
       if (e.data.error) {
         showError(e.data.error)
       }
-      if (e.data.setStorage) document.localStorage.setItem(contentHash, e.data.set);
-      if (e.data.getStorage) document.getElementById("iframe").postMessage(document.localStorage.getItem(contentHash), e.origin)
   }, false);  
   
 
@@ -264,8 +263,6 @@
       window.history.replaceState(null, null, window.location.search.substring(1) + "#" + fragment);
     }
 
-    var isIE = navigator.userAgent.match(/rv:11/);
-    var isEdge = navigator.userAgent.match(/Edge\//);
     var isWatch = (window.outerWidth < 220);
 
     let bittyInfo = bitty.parseBittyURL(location);
@@ -333,10 +330,8 @@
         // fragment = fragment.replace("text/plain,", "text/html").replace(",", "text/html");
        
         renderMode = "data";
-      } else if (durl.mediatype == "multipart/related") {
-      } else if (durl.type == "text") {
-      } else if (durl.type == "image") {
-      } else if (durl.type == undefined) {
+      } else if (durl.mediatype == "multipart/related" || durl.type == "text" || durl.type == "image" || durl.type == undefined) {
+        // Rendered directly by the browser as a data url
       } else if (!renderer) {
         console.log("unknown type, rendering as download")
         renderer = {script:"download"}
@@ -374,12 +369,6 @@
     }
 
 
-    if ((isEdge || isIE) && location.href.length == 2083) {
-      let element = document.getElementById("warning") || document.body.appendChild(el("div", {id: "warning"}))
-      element.innerHTML =
-        'Edge only supports shorter URLs (maximum 2083 bytes).<br>Larger sites may require a different browser.<br><a href="http://reference.bitty.site">Learn more</a>';
-    }
-
     await durl.decompress()
 
     if (durl.error) {
@@ -394,8 +383,7 @@
 
     if (!dataURL) return;
 
-    if (isIE && renderMode == "data") renderMode = "frame";
-    let overwriteSelf = isWatch && !params.script.endsWith(".html");
+    let overwriteSelf = isWatch && renderMode == "script" && !script.endsWith(".html");
 
     console.log("🖋 Rendering mode: " + "\x1B[1m" + renderMode, {url:durl})
     
@@ -404,11 +392,7 @@
       showLoader(false)   
     } else {
       bitty.dataToString(dataURL, function(content) {
-        if (renderMode == "frame") {
-          writeDocContent(overwriteSelf ? document : iframe.contentWindow.document, content)
-        } else if (renderMode == "script") {
-          renderContentWithScript({renderer, title, info, body:content, url:dataURL, overwrite:overwriteSelf});
-        }
+        renderContentWithScript({renderer, title, info, body:content, url:dataURL, overwrite:overwriteSelf});
       });
     }
     
@@ -423,6 +407,7 @@
   
   const SCRIPT_LOADER = `<!doctype html><meta charset=utf-8><script src="${location.origin}/render.js"></script>`
   async function renderContentWithScript(params) {
+    let iframe = getIframe();
 
     params.script = params.renderer.script;
     params.originalURL = location.href;
@@ -486,10 +471,7 @@
   }
 
 function writeDocContent(doc, content) {
-  return doc.documentElement.innerHTML = content;
-  doc.open();
-  doc.write(content);
-  doc.close();
+  doc.documentElement.innerHTML = content;
 }
 
 function extractTerms(...args) {
@@ -505,16 +487,15 @@ async function recordToHistory(durl) {
   let hash = await bitty.hashString(durl.href);
   
   let metadata = bitty.pathToMetadata(location.pathname);
-  if (!metadata.title && !metadata.title.length) {
-    if (!durl.rawData) durl = await durl.decompress();
+  if (!metadata.title) {
     let dom = await durl.parseDom();
 
     if (dom) {
-      for (let el of dom.getElementsByTagName('script')) { el.parentNode.removeChild(el) }
-      metadata.title = dom.title;
-      metadata.description = dom.body?.innerText.trim();
+      for (let el of [...dom.getElementsByTagName('script')]) { el.remove() }
+      metadata.title = dom.title || '';
+      metadata.description = dom.body?.textContent.trim();
       if (!metadata.title.length) {
-        metadata.title = (dom.body?.children[0]?.innerText.trim())?.split("\n").pop();
+        metadata.title = (dom.body?.children[0]?.textContent.trim())?.split("\n").pop();
       }
       metadata.description = metadata.description?.replace(metadata.title, "").trim();
     }

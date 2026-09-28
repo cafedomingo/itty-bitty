@@ -1,3 +1,4 @@
+/* global canvas */
 let script = window.script;
 
 function render() {
@@ -48,7 +49,6 @@ function updateDimensions(e) {
     let sizes = sizeString.split("x");
     sw = sizes[0]
     sh = sizes[1] || sw
-    density = 2;
   }
   canvas.width = window.w = sw;
   canvas.height = window.h = sh;

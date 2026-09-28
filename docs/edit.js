@@ -1,3 +1,4 @@
+/* global Quill */
 import * as bitty from './bitty.js';
 
 window.bitty = bitty;
@@ -326,7 +327,7 @@ async function handleContentChange() {
     }
     setFileName("");
   } else if (importedFileData) {
-    updateLink(importedFileData, {title});
+    updateLink(importedFileData, metadata);
   } else {
     updateLink("");
   }
@@ -340,9 +341,9 @@ var maxLengths = {
 };
 
 let bittyLink = undefined;
-function updateLink(url, metadata, push) {
+function updateLink(url, metadata = {}, push) {
   
-  let title = metadata.title;
+  let title = metadata.title ?? "";
   
   let includeMetadata = !metadata.includeMetadata;
   let path = includeMetadata ? "/" : bitty.metadataToPath(metadata) ?? "/";
@@ -366,12 +367,10 @@ function updateLink(url, metadata, push) {
   }
 
   var hash = location.hash;
-  if (true) {
-    if (push || !hash || !hash.length) {
-      window.history.pushState(null, null, bittyLink);
-    } else {
-      window.history.replaceState(null, null, bittyLink);
-    }
+  if (push || !hash || !hash.length) {
+    window.history.pushState(null, null, bittyLink);
+  } else {
+    window.history.replaceState(null, null, bittyLink);
   }
 
   var length = bittyLink.length;

@@ -20,7 +20,7 @@ let FRACTION_MAP = {
   '5/8': '\u215D',
   '7/8': '\u215E',
   replace: function(string) {
-    return string.replace(/\d[\/\.]\d\d?/g, function(a, b, c) {
+    return string.replace(/\d[/.]\d\d?/g, function(a, b, c) {
       return FRACTION_MAP[a];
     })
   }
@@ -46,7 +46,6 @@ let emojiMap = {
   "banana": "🍌",
   "pineapple": "🍍",
   "mango": "🥭",
-  "apple": "🍎",
   "apple": "🍏",
   "pear": "🍐",
   "peach": "🍑",
@@ -147,7 +146,6 @@ let emojiMap = {
   "milk": "🥛",
   "cream": "🥛",
   "coffee": "☕",
-  "tea": "🫖",
   "tea": "🍵",
   "sake": "🍶",
   "champagne": "🍾",
@@ -263,7 +261,7 @@ const m = (selector, ...args) => {
 
   var node = document.createElement(selector.length > 0 ? selector : "div");
   for (let prop in attrs) {
-    if (attrs.hasOwnProperty(prop) && attrs[prop] != undefined) {
+    if (Object.hasOwn(attrs, prop) && attrs[prop] != undefined) {
       if (prop.indexOf("data-") == 0) {
         let dataProp = prop.substring(5).replace(/-([a-z])/g, function(g) { return g[1].toUpperCase(); });
         node.dataset[dataProp] = attrs[prop];
@@ -324,7 +322,7 @@ function highlightStep(e) {
 
 }
 
-const ingredientMatch = /^(?:A )?([\-\/0-9\. \u00BC-\u00BE\u2153-\u215E\u2009]*)\s(.*)/
+const ingredientMatch = /^(?:A )?([-/0-9. \u00BC-\u00BE\u2153-\u215E\u2009]*)\s(.*)/
 
 
 function ingredientEl(string, terms) {
@@ -476,7 +474,7 @@ function render() {
   instructions = flattenInstructions(instructions)
   
   let intructionTerms = new Set(
-    Array.from(instructions.flat().join("\n").matchAll(/[A-Za-z\-]+/g)).map(m => m[0].length > 2 ? m[0].toLowerCase(): "")
+    Array.from(instructions.flat().join("\n").matchAll(/[A-Za-z-]+/g)).map(m => m[0].length > 2 ? m[0].toLowerCase(): "")
   );
   ignoredTerms.forEach((t) => { ingredientTerms.delete(t) })
 
@@ -532,7 +530,7 @@ function render() {
         case " ": lastSpace = i; break;
         case ".":
         case "!":
-        case "?":
+        case "?": {
           let lastWord = text.substring(lastSpace, i).trim();
           lastWord = lastWord.match(/\w+$/)?.pop().toLowerCase();
           if (abbreviations.includes(lastWord)) { continue; }
@@ -548,9 +546,11 @@ function render() {
             start = end;  
           }
           break;
+        }
         case "\n":
           steps.push(text.substring(start, i).trim());
           start = i;
+          break;
         default:
       }
     }

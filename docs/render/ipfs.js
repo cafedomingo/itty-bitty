@@ -1,3 +1,4 @@
+/* global Ipfs */
 loadSyle(window.script.replace("js", "css"))
 
 loadScript("https://unpkg.com/ipfs@0.63.2/dist/index.min.js", (scr) => {

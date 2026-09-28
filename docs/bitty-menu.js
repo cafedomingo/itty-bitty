@@ -1,3 +1,4 @@
+/* global el, QRious */
 import * as bitty from '/bitty.js';
 
 class ShareForm {
@@ -19,14 +20,13 @@ class ShareForm {
     formData.delete("t")
 
     if (!title.length) return;
-    let path = `/${dashspaces(title)}/`
+    let path = `/${bitty.encodePrettyComponent(title)}/`
     let encodedFields = ["i", "v"];
     formData.forEach((value, key) => {
       if (!value.length) return;
       if (encodedFields.includes(key)) value = btoa(key)
       path += `/${key}/${value}`
     });
-    formData.forEach((value, key) => {if (value.length) object[key] = value});
     
     path += "#" + url;
     console.log(path);
@@ -137,7 +137,7 @@ class Menu {
         .then(() => { console.log('Shared!');})
         .catch(console.error);
     } else {
-      copyLink(info)
+      this.copyLink()
     }
   }
 
@@ -178,7 +178,7 @@ class Menu {
         el("div.menu-item", {id: "twitter", onclick:this.makeTweet, innerHTML:this.icons.twitter} ),
       ),
       el("div.menu-item", {onclick:this.copyLink}, "copy"),
-      el("div.menu-item", {onclick:this.systemShare}, "share…"),
+      el("div.menu-item", {onclick:() => this.systemShare({})}, "share…"),
       // el("div.menu-item", {onclick:this.makeTinyurl}, "shorten"),
       // el("div.menu-item", {onclick:this.makeTinyurl}, "edit…"),
       fullMenu ? el("hr") : null,

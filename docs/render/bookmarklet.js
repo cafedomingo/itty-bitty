@@ -6,9 +6,6 @@ var b = document.documentElement;
 b.setAttribute('data-useragent',  navigator.userAgent);
 b.setAttribute('data-platform', navigator.platform );
 
-let mobile = ua.match(/Mobile/i) 
-
-let barName = ua.match(/Chrome/i) ? "Bookmarks" : "Favorites"
 let managerName = ua.match(/Edge/i) ? "Favorites" : "Bookmarks"
 let cmdKey = ua.match(/Mac/i) ? "⇧⌘B" : "Ctrl + Shift + B"
 

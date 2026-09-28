@@ -11,19 +11,6 @@
   // }
 
   const isFramed = window.self !== window.top;
-        
-  function addToast() {
-    // `<div id="toast">
-    // itty.bitty is experimental technology that renders linked content from outside sources.
-    // <a href="http://toast.bitty.site" target="_blank">Learn&nbsp;more</a>.
-    // <br><br>This content is only as trustworthy as its source, and it should be treated with the caution you would show any insecure web page.
-    // <br><br><button onclick="dismiss()">I understand</button> <input id="never" type="checkbox"><label for="never">Never show this</label>
-    // </div>`
-  }
-  // function dismiss() {
-  //   if (document.getElementById("never").checked) window.localStorage.setItem('toasted', true);
-  //   document.body.classList.remove("toasting")
-  // }
 
   function getIframe() {
     if (!document.iframe) {  
@@ -114,35 +101,8 @@
   function share(info) { // {title, text, url}
 
     let menu = new bitty_menu.Menu();
-    console.log("men", menu)
     menu.show(info)
     return;
-  }
-  function systemShare(info) {
-    if (!info.url) info = {title:document.title, text:document.title, url:location.href};
-    
-    if (navigator.share) {
-      navigator.share(info)
-        .then(() => { console.log('Shared!');})
-        .catch(console.error);
-    } else {
-      copyLink(info)
-    }
-  }
-
-  function copyLink(info) {
-    var text = info.url;
-    var dummy = document.createElement("input");
-    document.body.appendChild(dummy);
-    dummy.value = text;
-    dummy.select();
-    document.execCommand("copy");
-    document.body.removeChild(dummy);
-  
-    document.body.classList.add("copied");
-    setTimeout(function() {
-      document.body.classList.remove("copied");
-    }, 2000);
   }
 
   let wakeLock;
@@ -159,31 +119,6 @@
       console.error(`${err.name}, ${err.message}`);
     }
   };
-
-  function keepAwake() {
-    let ctx = new AudioContext();
-  
-    let bufferSize = 2 * ctx.sampleRate, 
-        emptyBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate), 
-        output = emptyBuffer.getChannelData(0);
-  
-    for(let i = 0; i < bufferSize; i++) output[i] = 0;
-  
-    let source = ctx.createBufferSource();
-    source.buffer = emptyBuffer;
-    source.loop = true;
-  
-    let node = ctx.createMediaStreamDestination();
-    source.connect(node);
-  
-    let audio = document.createElement("audio");
-    audio.style.display = "none";
-    document.body.appendChild(audio);
-  
-    audio.srcObject = node.stream;
-    audio.play();
-  }
-  
 
   const handleVisibilityChange = async () => {
     if (wakeLock !== null && document.visibilityState === 'visible') {
@@ -301,18 +236,14 @@
     var slashIndex = fragment.indexOf("/");
     var title = fragment.substring(0, slashIndex) || info.title;
     if (title) title = decodeURIComponent(title.replace(/_/g, " "))
-    var type = undefined;
-    var description = undefined;
 
     document.title = title ?? location.hostname;
 
     fragment = fragment.substring(slashIndex + 1);
     var editable = fragment.charAt(0) == "?";
-    var link = document.getElementById("edit");
     if (editable) {
       fragment = fragment.substring(1);
       document.body.appendChild(el("a", {id: "edit", onclick: function() { location.href = "/edit" + location.hash}}))
-      // link.href = "/edit" + location.hash;
     }
 
     if (fragment.startsWith("data:")) {
@@ -320,7 +251,6 @@
       renderer = durl.params?.render ? {script:durl.params.render, sandbox:"hash"} : renderers[durl.mediatype];
 
       //if (render.script == "parse") renderer.sandbox = "none"
-      type = "data:" + durl.mediaype;
       if (durl.mediatype == "text/html") {
         dataPrefix = bitty.HEAD_TAGS(durl.params?.prefix);
       } else if (durl.mediatype == "text/plain" || durl.mediatype == undefined) {
@@ -352,7 +282,6 @@
       if ( colon > 0 && colon < 15) {
         document.body.classList.remove("toasting");
         let scheme = fragment.substring(0,colon);
-        type = scheme;
       
         let renderer = renderers[scheme.toLowerCase()];
         
@@ -379,7 +308,6 @@
 
     durl.dataPrefix = dataPrefix;
     let dataURL = durl.href;
-    let dataContent = durl.rawData;
 
     if (!dataURL) return;
 
@@ -544,8 +472,6 @@ async function recordToHistory(durl) {
 
     let history = transaction.objectStore("urls"); // (2)
 
-    let hashCode = s => s.split('').reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)
-  
     let terms = extractTerms(metadata.title, metadata.description);
     let entry = {
       id: hash,

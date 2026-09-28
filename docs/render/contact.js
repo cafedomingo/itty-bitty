@@ -1,5 +1,3 @@
-let script = window.script;
-
 let fieldIcons = {
   bday: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><mask id="a" width="24" height="24" x="0" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path d="M0 0h24v24H0z"/></mask><g mask="url(#a)"><path d="M4 22a.967.967 0 0 1-.712-.288A.968.968 0 0 1 3 21v-5c0-.55.196-1.02.587-1.412A1.926 1.926 0 0 1 5 14v-4c0-.55.196-1.02.588-1.412A1.926 1.926 0 0 1 7 8h4V6.55c-.3-.2-.542-.442-.725-.725C10.092 5.542 10 5.2 10 4.8c0-.25.05-.496.15-.737.1-.242.25-.463.45-.663L12 2l1.4 1.4c.2.2.35.42.45.663.1.241.15.487.15.737 0 .4-.092.742-.275 1.025A2.503 2.503 0 0 1 13 6.55V8h4c.55 0 1.02.196 1.413.588.391.391.587.862.587 1.412v4c.55 0 1.02.196 1.413.588.391.391.587.862.587 1.412v5c0 .283-.096.52-.288.712A.968.968 0 0 1 20 22H4Zm3-8h10v-4H7v4Zm-2 6h14v-4H5v4Z"/></g></svg>',
   call: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><mask id="a" width="24" height="24" x="0" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path d="M0 0h24v24H0z"/></mask><g mask="url(#a)"><path d="M19.95 21c-2.15 0-4.246-.48-6.287-1.438a19.066 19.066 0 0 1-5.425-3.8 19.067 19.067 0 0 1-3.8-5.425C3.478 8.296 3 6.2 3 4.05c0-.3.1-.55.3-.75.2-.2.45-.3.75-.3H8.1a.96.96 0 0 1 .625.225.88.88 0 0 1 .325.575l.65 3.5c.033.233.03.446-.012.638a1.023 1.023 0 0 1-.288.512L6.975 10.9a16.4 16.4 0 0 0 2.638 3.375A18.64 18.64 0 0 0 13.1 17l2.35-2.35a1.4 1.4 0 0 1 .588-.338 1.61 1.61 0 0 1 .712-.062l3.45.7c.233.05.425.163.575.338.15.175.225.379.225.612v4.05c0 .3-.1.55-.3.75-.2.2-.45.3-.75.3ZM6.025 9l1.65-1.65L7.25 5H5.025c.083.683.2 1.358.35 2.025.15.667.367 1.325.65 1.975Zm8.95 8.95c.65.283 1.313.508 1.987.675.675.167 1.355.275 2.038.325v-2.2l-2.35-.475-1.675 1.675Z"/></g></svg>',
@@ -75,19 +73,6 @@ let sprite = el("svg", {xmlns:"http://www.w3.org/2000/svg"},
 console.log("sprite", sprite);
 // document.body.appendChild(sprite);
   
-
-function share() {
-  parent.postMessage({share:{}}, "*");
-}
-
-function vcardVersion(data) {
-  if (data.vcard) return data.vcard;
-
-  return `BEGIN:VCARD
-VERSION:3.0
-N:NAME
-END:VCARD`
-}
 
 function formatBday(date) {
   const year = date.slice(0, 4);

@@ -28,8 +28,7 @@ loadScript("https://unpkg.com/ipfs@0.63.2/dist/index.min.js", (scr) => {
 //   }
 // }
 
-async function getData(cid) {
-  const node = await Ipfs.create()
+async function getData(cid) {  const node = await Ipfs.create()
   const stream = node.cat(cid)
   let data = ''
   let chunks = []
@@ -45,10 +44,4 @@ async function getData(cid) {
 
   console.log("Got IPFS Data", data)
   return data;
-
-
 }
-
-
-let url = params.url.replace("ipfs:", "https://ipfs.io/ipfs/");
-// location.href = url;

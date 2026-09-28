@@ -4,15 +4,8 @@ import * as bitty from './bitty.js';
 window.bitty = bitty;
 
 var QS = document.querySelector.bind(document);
-var QSS = document.querySelectorAll.bind(document);
 
-var DATA_PREFIX = "data:text/html;base64,";
-var DATA_PREFIX_8 = "data:text/html;charset=utf-8;base64,";
-var DATA_PREFIX_BXZE = "data:text/html;charset=utf-8;bxze64,";
-var DATA_PREFIX_GZIP = "data:text/html;charset=utf-8;gzip64,";
-
-
-var b = document.documentElement.setAttribute(
+document.documentElement.setAttribute(
   "data-useragent",
   navigator.userAgent
 );
@@ -41,7 +34,6 @@ var editor = quill.root;
 editor.autocomplete="off";
 var importedFileData = undefined;
 
-var content = editor;
 window.onload = async function() {
   window.onpopstate = function(e) {
     setContent(e.state);
@@ -53,7 +45,6 @@ window.onload = async function() {
   document.body.onclick = function(e) {
     if (e.target == document.body) editor.focus();
   };
-  content = document.getElementById("content");
 
   let lastTarget;
   window.addEventListener("dragenter", function(e){ // drag start
@@ -82,9 +73,7 @@ window.onload = async function() {
   document.getElementById("drop-zone").addEventListener("drop", handleDrop);
   document.getElementById("drop-zone").addEventListener("dragover", e => e.preventDefault());
   editor.addEventListener("paste", handlePaste);
-  // content.contentEditable = "true";
   editor.focus();
-  // document.execCommand("selectAll", false, null);
   QS("#qrcode").onclick = makeQRCode;
   QS("#upload").onclick = upload;
   QS("#share").onclick = share;
@@ -183,37 +172,6 @@ async function handleDrop(e) {
 }
 
 // TODO Command+Shift+T for title (H1), Command+Shift+H for headline (H2), Command+Shift+B for body text (remove any of the above)
-function handleKey(e) {
-  var code = e.which;
-  var handled = false;
-  if (e.metaKey && e.altKey) {
-    handled = true;
-    if (code == "1".charCodeAt(0)) {
-      document.execCommand("formatBlock", true, "<h1>");
-    } else if (code == "2".charCodeAt(0)) {
-      document.execCommand("formatBlock", true, "<h2>");
-    } else if (code == 220) {
-      // \
-      document.execCommand("removeFormat");
-    } else if (code == "0".charCodeAt(0)) {
-      document.execCommand("formatBlock", true, "");
-    } else {
-      handled = false;
-    }
-  } else if (e.metaKey) {
-    if (code == "K".charCodeAt(0)) {
-      handled = true;
-      var url = prompt("Add a link", "");
-      if (url) {
-        document.execCommand("createLink", true, url);
-      }
-    }
-  } else if (code == 9 ) {
-      console.log("tab");
-      e.preventDefault();
-  }
-  if (handled) e.preventDefault();
-}
 
 var codepenRE = /(https:\/\/codepen\.io\/[\w]+\/(\w+)\/(\w+))/;
 function handlePaste(e) {
@@ -226,7 +184,6 @@ function handlePaste(e) {
   }
 }
 
-var TEMPLATE_MARKER = "/*use-itty-bitty-template*/";
 function fetchCodepen(url) {
 
   Promise.all([
@@ -241,7 +198,6 @@ function fetchCodepen(url) {
 
     console.log({h,c,j})
 
-    var useTemplate = c.indexOf(TEMPLATE_MARKER) >= 0;
     var string =
       '<style type="text/css">' + c + "</style>" +
       h +
@@ -257,7 +213,6 @@ function fetchCodepen(url) {
     console.log(`Compressed from ${url.length} to ${durl.href.length} bytes (${Math.round(ratio * 100)}%)`);
 
     // setFileName("✒️" + "codepen");
-    var title = QS("#doc-title").innerText;
     setTimeout(function() {
       // var data = (useTemplate ? "" : DATA_PREFIX_BXZE) + zip;
       // importedFileData = url;
@@ -433,10 +388,6 @@ function toggleFormat(flag) {
 }
 
 
-function copyThenLink() {
-  copyLink();
-  return confirm("Copied your link to the clipboard. Paste it to share.");
-}
 function copyLink() {
   var text = bittyLink;
   var dummy = document.createElement("input");
@@ -450,12 +401,6 @@ function copyLink() {
   setTimeout(function() {
     document.body.classList.remove("copied");
   }, 2000);
-}
-
-function saveLink() {
-  var url = "/" + location.hash;
-  window.history.pushState(null, null, url);
-  location.reload();
 }
 
 function tweetLink() {

@@ -174,7 +174,6 @@ class DataURL {
 
 function parseBittyURL(url) {
   if (typeof url === 'string') url = new URL(url);
-  let location = url.location;
   let fragment = url.hash;
   let path = url.pathname
 
@@ -182,39 +181,6 @@ function parseBittyURL(url) {
   var hashTitle = decodePrettyComponent(fragment.substring(1, slashIndex));
   var hashData = fragment.substring(slashIndex + 1);
   return {path, hashTitle, hashData}
-}
-
-async function testDecode(rawData) {
-  console.group("Testing decode")
-  let t1 = performance.now()
-  let gz = dataToBase64TD(rawData)
-  let t2 = performance.now()
-  console.log("textdecode", gz.length, Math.round((t2 - t1)*1000));
-  let xz = await dataToBase64FR(rawData);
-  let t3 = performance.now()
-  console.log("reader", xz.length, Math.round((t3 - t2)*1000));
-}
-
-async function testCompression(rawData) {
-  console.group("Testing compression")
-  let t1 = performance.now()
-  let gz = await compressData(rawData, GZIP_MARKER);
-  let t2 = performance.now()
-  console.log("gz", dataToBase64(gz).length, Math.round(t2 - t1));
-  let xz = await compressData(rawData, LZMA_MARKER);
-  let t3 = performance.now()
-  console.log("xz", dataToBase64(xz).length, Math.round(t3 - t2));
-
-  console.groupEnd();
-
-  // let ungz = await decompressData(gz, GZIP_MARKER);
-  // let unxz = await decompressData(xz, LZMA_MARKER);
-  
-  // console.log("unzip", ungz == rawData, unxz==rawData,{ungz, unxz,rawData,
-  //   raw: byteArrayToString(rawData).substring(684),
-  // ungzs: byteArrayToString(ungz).substring(684), 
-  // unxzs: byteArrayToString(unxz).substring(684)
-  // }, (byteArrayToString(ungz)) ==  byteArrayToString(unxz))
 }
 
 async function compressData(data, encoding = GZIP_MARKER, callback) {
@@ -414,38 +380,6 @@ function loadScript(src, type, callback) {
   return callback ? promise.then(callback) : promise;
 }
 
-// iMessage incorrectly handles urls with more than 301 sequential non-breakable characters, so we introduce = to prevent this
-function escapeStringForIMessage(str) {
-  var matches = str.match(/[^/+=]{1,300}/g);
-  if (matches) str = matches.join("=")
-  return str;
-}
-
-// function decompressDataURL(dataURL, preamble, callback) {
-//   let info = infoForDataURL(dataURL);
-
-//   let encoding = info.encoding;
-//   let encodingIndex = dataURL.indexOf(encoding);
-
-//   if (encoding && encoding != "base64") {
-//     var base64 = dataURL.substring(encodingIndex + LZMA64_MARKER.length + 1);
-//     base64 = base64.replace("=",""); // TODO: apply this elsewhere;
-
-//     decryptBase64(info.params?.cipher, base64, (base64) => {
-//       let bytes = base64ToByteArray(base64);
-//       decompressString(bytes, encoding, function(string) {
-//         stringToData(string, function(data) {
-//           if (!data) return callback();
-//           callback(dataURL.substring(0, encodingIndex) + BASE64_MARKER + "," + (preamble || '') + data.split(',')[1], string)
-//         })
-//       })
-//     })
-    
-//   } else {
-//     callback(dataURL)
-//   }
-// }
-
 async function hashString(string, base = 36) {
   const arrayBuffer = await(new TextEncoder().encode(string))
   const hashAsArrayBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
@@ -468,10 +402,6 @@ function dataToBase64(data) {
   return btoa(String.fromCharCode.apply(null, new Uint8Array(data))); 
 }
 
-function dataToBase64TD(data) {
-  return btoa(new TextDecoder('utf8').decode(data));
-}
-
 function dataToBase64FR(data) {
   return new Promise((resolve, reject) => {
     if (!data || !data.byteLength) return resolve("");
@@ -480,27 +410,6 @@ function dataToBase64FR(data) {
     fr.onerror = reject;
     fr.readAsDataURL(new Blob([data], {encoding:"UTF-8",type:"text/html;charset=UTF-8"}));
   })
-}
-
-function dataURLToString(durl) {
-  return fetch(durl)
-    .then(r => r.blob())
-    .then(blob => {
-      return new Promise((resolve, reject) => {
-        var fr = new FileReader();
-        fr.onload = () => resolve(fr.result)
-        fr.onerror = reject;
-        fr.readAsText(blob);
-      })
-    })
-}
-
-
-function stringToData(string, callback) {
-  if (!string.length) return callback("");
-  var a = new FileReader();
-  a.onload = function(e) { callback(e.target.result.replace()) }
-  a.readAsDataURL(new Blob([string], {encoding:"UTF-8",type:"text/html;charset=UTF-8"}));
 }
 
 function dataToString(data, callback) {
@@ -514,20 +423,6 @@ function dataToString(data, callback) {
 function newDataURLtoBlob(dataURL) {
   return fetch(dataURL).then(r => r.blob())
 }
-
-function dataURLtoBlob(dataURL) {
-  var byteString = window.atob(dataURL.split(',')[1]);
-  var mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
-  var arrayBuffer = new ArrayBuffer(byteString.length);
-  var _ia = new Uint8Array(arrayBuffer);
-  for (var i = 0; i < byteString.length; i++) {
-      _ia[i] = byteString.charCodeAt(i);
-  }
-  var dataView = new DataView(arrayBuffer);
-  var blob = new Blob([dataView.buffer], { type: mimeString });
-  return blob;
-}
-
 
 // Encode or decode space/dash combinations to avoid %20 in urls. Lossy.
 
@@ -610,12 +505,7 @@ const el = (selector, ...args) => {
 export {
   DataURL,
   infoForDataURL,
-  stringToData,
   dataToString,
-  // compressString,
-  // decompressString,
-  // compressDataURL,
-  // decompressDataURL,
   hashString,
   encodePrettyComponent,
   decodePrettyComponent,

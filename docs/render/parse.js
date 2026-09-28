@@ -1,9 +1,5 @@
 parent.postMessage({title:"Parsing Content..."}, "*");
 
-let lca = (a,b) => {
-  return a.parents().has(b).first();
-}
-
 const parser = new DOMParser();
 const doc = parser.parseFromString(params.body, "text/html");
 console.log("🛠️ Parsing Document ", doc)

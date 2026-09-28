@@ -103,3 +103,14 @@ test("editor makes a link that renders", async ({ page }) => {
   await viewer.goto(link);
   await expect(viewer.frameLocator("#iframe").locator("body")).toContainText("Hello itty bitty ✓ ünïcödé");
 });
+
+test("editor never drops the password for short raw HTML", async ({ page }) => {
+  await page.goto("/edit");
+  await page.locator("#editor .ql-editor").click();
+  await page.keyboard.type("<b>hi</b>");
+  await page.locator("#doc-title").click();
+  await page.locator("#md-password").fill(PASSWORD);
+  await page.locator("#md-password").press("End");
+  await expect.poll(() => page.url()).toContain("cipher=");
+  expect(decodeURIComponent(page.url())).not.toContain("<b>hi</b>");
+});

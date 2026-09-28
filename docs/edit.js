@@ -268,10 +268,11 @@ async function handleContentChange() {
 
 
     if (ratio <= 0.95) url = durl.href;
-    if (rawHTML) {
-      updateLink(url, metadata);
-    } else if (metadata.password) {
+    if (metadata.password) {
+      // Always use the encrypted link, even when it's longer than the plain one.
       updateLink(durl.href, metadata);
+    } else if (rawHTML) {
+      updateLink(url, metadata);
     } else {
       updateLink("?" + durl.data, metadata);
     }

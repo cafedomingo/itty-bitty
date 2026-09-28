@@ -1,16 +1,15 @@
-FROM node:20-bookworm-slim AS base
+FROM node:24-bookworm-slim
 WORKDIR /app
-
-COPY package*.json ./
-RUN npm install --omit=dev
-
-COPY docs ./docs
-COPY server ./server
-COPY netlify ./netlify
-COPY build-v2.js ./build-v2.js
-
 ENV NODE_ENV=production
 ENV PORT=8080
 
+COPY package.json ./
+RUN npm install --omit=dev && npm cache clean --force
+
+COPY docs ./docs
+COPY lib ./lib
+COPY server ./server
+
+USER node
 EXPOSE 8080
-CMD ["npm", "start"]
+CMD ["node", "server/index.mjs"]

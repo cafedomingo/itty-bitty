@@ -10,12 +10,13 @@ export default defineConfig({
   reporter: process.env.CI ? [["github"], ["list"]] : "list",
   use: { baseURL: `http://localhost:${port}` },
   webServer: {
-    command: "node tests/server.mjs",
+    command: "node server/index.mjs",
     url: `http://localhost:${port}/edit`,
+    env: { PORT: String(port), REQUEST_LOG: "silent", UA_ARRAY: "BlockedBot" },
     reuseExistingServer: !process.env.CI,
   },
   projects: [
-    { name: "functions", testMatch: /functions\.spec/ },
+    { name: "server", testMatch: /(functions|server)\.spec/ },
     { name: "chromium", testMatch: /render\.spec/, use: { ...devices["Desktop Chrome"] } },
     { name: "firefox", testMatch: /render\.spec/, use: { ...devices["Desktop Firefox"] } },
     { name: "webkit", testMatch: /render\.spec/, use: { ...devices["Desktop Safari"] } },

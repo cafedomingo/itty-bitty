@@ -2,7 +2,11 @@ node_modules
 npm-debug.log
 .DS_Store
 .git
+.github
 .gitignore
 .vscode
-netlify/edge-functions/*.ts
+netlify
 functions
+tests
+test-results
+playwright-report

@@ -12,7 +12,7 @@ For more info: [wiki.bitty.site](https://github.com/alcor/itty-bitty/wiki/)
 
 ```sh
 npm install
-npm run serve   # serves docs/ on http://localhost:8080 with the same routing as Netlify
+npm run dev     # serves the site on http://localhost:8080, the same way Netlify does
 npm run lint
 npx playwright install   # once, to download browsers
 npm test        # renders links in Chromium, Firefox and WebKit, and tests the Netlify functions
@@ -20,9 +20,11 @@ npm test        # renders links in Chromium, Firefox and WebKit, and tests the N
 
 ## Self-hosting
 
+`server/index.mjs` does what Netlify does: serves `docs/`, answers link-preview crawlers, and rasterizes SVG preview images.
+The crawler metadata and rasterizing code in `lib/` is shared with the Netlify functions.
+
 ### Local runtime prerequisites
-- Node.js 20 or newer
-- npm 9 or newer
+- Node.js 20.19 or newer
 
 ### Run locally
 1. Install dependencies with `npm install`.

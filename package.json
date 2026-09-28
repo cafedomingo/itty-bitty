@@ -3,18 +3,17 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "NODE_ENV=development node server/index.js",
+    "start": "node server/index.mjs",
+    "dev": "NODE_ENV=development node server/index.mjs",
     "build": "node build-v2.js",
     "lint": "eslint .",
-    "test": "playwright test",
-    "serve": "node tests/server.mjs"
+    "test": "playwright test"
   },
   "dependencies": {
     "brotli-wasm": "^1.1.0",
-    "compression": "^1.7.4",
-    "express": "^4.19.2",
-    "morgan": "^1.10.0",
+    "compression": "^1.8.2",
+    "express": "^5.2.1",
+    "morgan": "^1.12.1",
     "sharp": "^0.35.5"
   },
   "devDependencies": {

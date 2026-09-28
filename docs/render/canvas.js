@@ -2,7 +2,6 @@
 let script = window.script;
 
 function render() {
-  let colors = params.body;
   window.canvas = el("canvas.fullbleed", {width:screen.width, height:screen.height});
   window.ctx = canvas.getContext("2d");
   window.w = window.canvas.width
@@ -25,8 +24,6 @@ function render() {
 
 function updateDimensions(e) {
   var ua = navigator.userAgent;
-  var isMac = /Macintosh/.test(ua)
-  var isWin = /Windows/.test(ua)
   var iOS = /iPad|iPhone|iPod/.test(ua)
 
   var density = window.devicePixelRatio;

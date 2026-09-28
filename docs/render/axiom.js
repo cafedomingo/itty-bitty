@@ -1,5 +1,4 @@
 /* global canvas, ctx, getName, onConnect, onUpdate, onInput, drawText -- set on window here or defined by the user's script */
-let script = window.script 
 
 var cssURL = "/render/axiom.css";
 Promise.all([loadSyle(cssURL)]).then(render);

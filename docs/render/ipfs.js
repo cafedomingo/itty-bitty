@@ -50,5 +50,4 @@ async function getData(cid) {
 }
 
 
-let url = params.url.replace("ipfs:", "https://ipfs.io/ipfs/");
 // location.href = url;

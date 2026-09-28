@@ -1,68 +1,12 @@
 /* global el, QRious */
 import * as bitty from '/bitty.js';
 
-class ShareForm {
-  constructor() {
-    
-    // element created
-  }
-
-  parse(form) { 
-
-    let formData = new FormData(form);
-    let formObj = Object.fromEntries(formData);
-    console.log("DATA", formObj)
-
-    console.log("object", formObj);
-    let url = formData.get("url");
-    formData.delete("url")
-    let title = formData.get("t");
-    formData.delete("t")
-
-    if (!title.length) return;
-    let path = `/${bitty.encodePrettyComponent(title)}/`
-    let encodedFields = ["i", "v"];
-    formData.forEach((value, key) => {
-      if (!value.length) return;
-      if (encodedFields.includes(key)) value = btoa(key)
-      path += `/${key}/${value}`
-    });
-    
-    path += "#" + url;
-    console.log(path);
-    document.getElementById("rurl").value = `https://redirect.app${path}`;
-    // history.replaceState(null, path, path);
-  }
-
-  render() {
-    return el("form#share-form.flex-column",
-        el("input", {type: "image", target: "i", class: "thumbnail", onclick: "getURL(this)", src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='600' viewBox='0 0 1200 600'%3E%%3C/svg%3E%0A"}),
-        el("div.flex-row",
-          el("div.flex-column",
-            el("input", {name: "t", oninput: this.parse, placeholder: "Title"}),
-            el("input", {name: "d", oninput: this.parse, placeholder: "Description"}),
-            el("input", {id: "i", name: "i", type: "hidden", oninput: this.parse}),
-            el("input", {id: "f", name: "i", type: "hidden", oninput: this.parse}),
-            el("input", {name: "url", oninput: this.parse, placeholder: "example.com"}),
-            el("button", {type: "sumbit", style: "display:none"}, "submit")
-          ),
-          el("input", {type: "image", src: "", id: "favicon", target: "f", onclick: "getURL(this)", oninput: this.parse, placeholder: "icon"})
-        )
-    )
-  }
-}
-
 class Menu {
   /**
    * @constructor
    */
   constructor(button) {
     this.button = button;
-  }
-
-  makeTinyurl() {
-    console.log("url", location.href)
-    location.href='https://tinyurl.com/create.php?url=' + encodeURIComponent(location.href)  
   }
 
   makeText() {
@@ -83,7 +27,7 @@ class Menu {
         }
       document.body.append(qrDialog);
       qrDialog.showModal();
-      var qr = new QRious({
+      new QRious({
         element: document.getElementById("qr"),
         background: 'transparent',
         foreground: 'currentColor',
@@ -95,10 +39,6 @@ class Menu {
   sendEmail() {
     console.log("url", location.href)
     location.href='mailto:info@example.com?body=' + encodeURIComponent(location.href)  
-  }
-
-  makeToot() {
-    return false;
   }
 
   makeTweet() {
@@ -113,19 +53,8 @@ class Menu {
     window.open(url, "_blank");
     return false;
   }
-   copyLink() {
-    var text = location.href;
-    var dummy = document.createElement("input");
-    document.body.appendChild(dummy);
-    dummy.value = text;
-    dummy.select();
-    document.execCommand("copy");
-    document.body.removeChild(dummy);
-  
-    document.body.classList.add("copied");
-    setTimeout(function() {
-      document.body.classList.remove("copied");
-    }, 2000);
+  copyLink() {
+    bitty.copyToClipboard(location.href);
   }
   
   
@@ -179,8 +108,6 @@ class Menu {
       ),
       el("div.menu-item", {onclick:this.copyLink}, "copy"),
       el("div.menu-item", {onclick:() => this.systemShare({})}, "share…"),
-      // el("div.menu-item", {onclick:this.makeTinyurl}, "shorten"),
-      // el("div.menu-item", {onclick:this.makeTinyurl}, "edit…"),
       fullMenu ? el("hr") : null,
       fullMenu ? el("div.menu-item", {onclick:this.showAbout}, "itty bitty") : null,
       )

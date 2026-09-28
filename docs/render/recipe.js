@@ -176,10 +176,6 @@ let icons = {
   info:('<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><g id="info"><mask id="mask0_802_285" width="16" height="16" x="0" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path id="Bounding box" d="M0 0h16v16H0z"/></mask><g mask="url(#mask0_802_285)"><path id="info_2" d="M7.333 11.334h1.334v-4H7.334v4ZM8 6a.646.646 0 0 0 .476-.192.645.645 0 0 0 .19-.474.647.647 0 0 0-.19-.476A.647.647 0 0 0 8 4.667a.645.645 0 0 0-.474.191.646.646 0 0 0-.192.476c0 .188.064.347.192.474A.643.643 0 0 0 8 6Zm0 8.667a6.489 6.489 0 0 1-2.6-.525 6.728 6.728 0 0 1-2.117-1.425A6.728 6.728 0 0 1 1.86 10.6 6.489 6.489 0 0 1 1.333 8c0-.922.176-1.789.526-2.6a6.728 6.728 0 0 1 1.425-2.117A6.73 6.73 0 0 1 5.4 1.858 6.495 6.495 0 0 1 8 1.333c.922 0 1.789.175 2.6.525.811.35 1.517.825 2.117 1.425.6.6 1.075 1.306 1.425 2.117.35.811.525 1.678.525 2.6 0 .922-.175 1.789-.525 2.6a6.728 6.728 0 0 1-1.425 2.117c-.6.6-1.306 1.075-2.117 1.425a6.489 6.489 0 0 1-2.6.525Zm0-1.333c1.49 0 2.75-.517 3.784-1.55 1.033-1.034 1.55-2.295 1.55-3.784 0-1.489-.517-2.75-1.55-3.783C10.75 3.184 9.489 2.667 8 2.667c-1.489 0-2.75.517-3.783 1.55S2.667 6.51 2.667 8c0 1.49.517 2.75 1.55 3.784C5.25 12.816 6.51 13.334 8 13.334Z"/></g></g></svg>')
 }
 
-const replacements = {
-  "teaspoon": "tsp.",
-  "tablespoon": "Tbsp."
-}
 
 let lastNoun = undefined;
 
@@ -208,7 +204,6 @@ window.addEventListener("mouseover", (e) => {
   if (target.classList.contains("noun")) {
     let els = document.querySelectorAll("#" + e.target.id);
     
-    let isIngredient = target.closest(".ingredients");
     for (const noun of els) {
       noun.classList.add("hovered");
       noun.closest(".substep")?.classList.add("hovered")
@@ -357,15 +352,6 @@ function highlightTimes(string) {
   });
 }
 
-function dismissTimer(e) {
-  console.log(e.target);
-}
-
-function playSound(loc) {
-  var audio = new Audio(loc);
-  // audio.play();  
-}
-
 function startTimer(e, t1, t2) {
   if (!e.startTime) {
     e.startTime = new Date();
@@ -385,7 +371,6 @@ function startTimer(e, t1, t2) {
       let remaining = Math.round((e.endTime - now)/1000);
       let expired = percent > 100;
       if (expired) {
-        playSound("recipe/beep.mp4")
         delete e.style.backgroundImage;
         // clearInterval(e.interval);
         remaining = -remaining;
@@ -519,7 +504,6 @@ function render() {
   function stepsFromText(text) {
     let abbreviations = ["tsp", "tbsp", "oz", "lb", "lbs"];
     let steps = [];
-    let i = 0;
     let start = 0;
     let depth = 0;
     let lastSpace = 0;
@@ -597,13 +581,6 @@ function render() {
 
   let recipeYield = (getStringProperty(json.recipeYield));
   if (!isNaN(parseInt(recipeYield?.charAt(recipeYield?.length - 1)))) recipeYield += " servings";
-
-  function imgload(e) {
-      console.log(e, "img");
-      var image = document.querySelector('img');
-      var isLoaded = image.complete && image.naturalHeight !== 0;
-      alert(isLoaded);
-  }
 
 
   var bgImg = new Image();

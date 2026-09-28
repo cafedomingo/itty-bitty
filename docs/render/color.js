@@ -1,12 +1,7 @@
 /* global hueCanvas, lumCanvas */
-let script = window.script;
 
 // import Color from "https://colorjs.io/dist/color.js";
 import Color from "/js/color.min.js";
-
-function share() {
-  parent.postMessage({share:{}}, "*");
-}
 
 let currentColor;
 
@@ -149,7 +144,7 @@ function renderLumCanvas() {
   ctx.fillRect(0, 0, lumCanvas.width, h );
 }
 
-var path = script.substring(0, script.lastIndexOf("."));
+var path = window.script.substring(0, window.script.lastIndexOf("."));
 var cssURL = path + ".css";
 Promise.all([ 
   // loadSyle("https://fonts.googleapis.com/icon?family=Material+Icons+Outlined"),

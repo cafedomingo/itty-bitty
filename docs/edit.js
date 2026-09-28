@@ -389,18 +389,7 @@ function toggleFormat(flag) {
 
 
 function copyLink() {
-  var text = bittyLink;
-  var dummy = document.createElement("input");
-  document.body.appendChild(dummy);
-  dummy.value = text;
-  dummy.select();
-  document.execCommand("copy");
-  document.body.removeChild(dummy);
-
-  document.body.classList.add("copied");
-  setTimeout(function() {
-    document.body.classList.remove("copied");
-  }, 2000);
+  bitty.copyToClipboard(bittyLink);
 }
 
 function tweetLink() {

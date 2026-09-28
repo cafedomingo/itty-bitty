@@ -11,7 +11,7 @@ For more info: [wiki.bitty.site](https://github.com/alcor/itty-bitty/wiki/)
 ## Development
 
 ```sh
-npm ci
+npm install
 npm run serve   # serves docs/ on http://localhost:8080 with the same routing as Netlify
 npm run lint
 npx playwright install   # once, to download browsers

@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const port = 8080;
+// A dedicated port, and never reuse a running server: the tests need their own environment (UA_ARRAY).
+const port = 8181;
 
 export default defineConfig({
   testDir: "tests",
@@ -13,7 +14,7 @@ export default defineConfig({
     command: "node server/index.mjs",
     url: `http://localhost:${port}/edit`,
     env: { PORT: String(port), REQUEST_LOG: "silent", UA_ARRAY: "BlockedBot" },
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
   },
   projects: [
     { name: "server", testMatch: /(functions|server)\.spec/ },

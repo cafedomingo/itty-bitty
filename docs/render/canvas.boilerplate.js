@@ -1,3 +1,4 @@
+/* global draw -- defined by the user's script */
 document.body.style = "display:flex; min-height:100vh; justify-content: center; align-items: center; margin:0;"
 let canvas = window.canvas = document.createElement("canvas");
 canvas.style = "max-height: 100vh; max-width: 100vw;";

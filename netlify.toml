@@ -1,3 +1,7 @@
+[build.environment]
+  # sharp 0.35 needs Node 20.9+; Netlify functions default to the build's Node version.
+  NODE_VERSION = "24"
+
 [functions]
   external_node_modules = [
     "sharp"

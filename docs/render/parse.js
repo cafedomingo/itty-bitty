@@ -1,8 +1,5 @@
 parent.postMessage({title:"Parsing Content..."}, "*");
 
-let lca = (a,b) => {
-  return a.parents().has(b).first();
-}
 
 const parser = new DOMParser();
 const doc = parser.parseFromString(params.body, "text/html");
@@ -91,11 +88,11 @@ let scrapeRecipe =  async document => {
   
   // Scrape Yield
   if (!recipe.recipeYield) {
-    for(let text in ["yield", "makes", "serv"]) {
-      var xpath = `//div[starts-with(text(), '${text}')]`;
+    for (let text of ["yield", "makes", "serv"]) {
+      let xpath = `//div[starts-with(text(), '${text}')]`;
       const match = document.evaluate(xpath, document, null, XPathResult.ANY_TYPE, null);
-      let node = null;
-      while (node = match.iterateNext()) {
+      let node;
+      while ((node = match.iterateNext())) {
         recipe.recipeYield = node.innerText 
       }  
     }
@@ -103,10 +100,10 @@ let scrapeRecipe =  async document => {
   
   // Scrape ingredients
   if (!recipe.recipeIngredient) {
-    var xpath = "//div[text()='Ingredients']";
+    let xpath = "//div[text()='Ingredients']";
     const match = document.evaluate(xpath, document, null, XPathResult.ANY_TYPE, null);
-    let node = null;
-    while (node = match.iterateNext()) {
+    let node;
+    while ((node = match.iterateNext())) {
       console.warn("match", node.parentNode.innerText.split("\n"))  
       recipe.recipeIngredient = node.parentNode.innerText.trim().split("\n") 
     }  
@@ -114,10 +111,10 @@ let scrapeRecipe =  async document => {
   
   // Scrape instructions
   if (!recipe.recipeInstructions) {
-    var xpath = "//div[text()='Instructions']";
+    let xpath = "//div[text()='Instructions']";
     const match = document.evaluate(xpath, document, null, XPathResult.ANY_TYPE, null);
-    let node = null;
-    while (node = match.iterateNext()) {
+    let node;
+    while ((node = match.iterateNext())) {
       console.warn("Instructions", node.parentNode.innerText.split("\n"))  
       recipe.recipeInstructions = node.parentNode.innerText.trim().split("\n").filter((a)=>a.length > 1) 
     }

@@ -1,7 +1,7 @@
+/* global canvas */
 let script = window.script;
 
 function render() {
-  let colors = params.body;
   window.canvas = el("canvas.fullbleed", {width:screen.width, height:screen.height});
   window.ctx = canvas.getContext("2d");
   window.w = window.canvas.width
@@ -24,8 +24,6 @@ function render() {
 
 function updateDimensions(e) {
   var ua = navigator.userAgent;
-  var isMac = /Macintosh/.test(ua)
-  var isWin = /Windows/.test(ua)
   var iOS = /iPad|iPhone|iPod/.test(ua)
 
   var density = window.devicePixelRatio;
@@ -48,7 +46,6 @@ function updateDimensions(e) {
     let sizes = sizeString.split("x");
     sw = sizes[0]
     sh = sizes[1] || sw
-    density = 2;
   }
   canvas.width = window.w = sw;
   canvas.height = window.h = sh;

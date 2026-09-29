@@ -1,95 +1,28 @@
-function decodePrettyComponent(s) {
-  let replacements = {'---': ' - ', '--': '-','-' : ' '}
-  return decodeURIComponent(s.replace(/-+/g, e => replacements[e] ?? '-'))
-}
+import { isBlockedAgent, isMetadataBot, parseAgentList, pathToMetadata, renderMetadata } from "../../lib/metadata.mjs";
 
-function decodeURL(s) {
-  if (s.startsWith("http")) return s;
-  return atob(s.replace(/=/g,''));
-}
-
-
-function pathToMetadata(path) {
-  let components = path.substring(1).split("/");
-  let info = {title: decodePrettyComponent(components.shift())}
-  for (let i = 0; i < components.length; i+=2) {
-    let key = components[i];
-    let value = components[i+1];
-    if (!value) continue;
-    if (key == "d") { value = decodePrettyComponent(value); }
-    else if (value.includes("%")) { value = decodeURIComponent(value); }
-    if (key.length && value.length) info[key] = value;
-  }
-  return info;
-}
-
-// Every value below comes from the request path, so it must be escaped before going into HTML.
-function escapeHTML(s) {
-  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-}
-
-function mProp(prop, content) { return `<meta property="${prop}" content="${escapeHTML(content)}"/>` }
-function mName(name, content) { return `<meta name="${name}" content="${escapeHTML(content)}"/>` }
-
-// Valid URL Chars A-Za-z0-9-._~:?@!$&()*;=+/
 export default async (request, context) => {
   try {
-    const ua = request.headers.get("user-agent");
-    let url = new URL(request.url);
-    let path = url.pathname;
-    let geo = context?.geo?.city + ", " + context?.geo?.subdivision?.code + ", " + context?.geo?.country?.code
+    const ua = request.headers.get("user-agent") ?? "";
+    const url = new URL(request.url);
+    const path = url.pathname;
+    const geo = context?.geo?.city + ", " + context?.geo?.subdivision?.code + ", " + context?.geo?.country?.code;
 
-    let uaArray = Deno.env.get("UA_ARRAY")?.split(",") || [];
-    let uaMatch = uaArray.some(a => ua?.indexOf(a) != -1);
-    if (uaMatch) { return new Response('', { status: 401 }); }
-    
-    if (path != "/" ) {
-      let metadataBots = [ "Twitterbot", "curl", "facebookexternalhit", "Slackbot-LinkExpanding", "Discordbot", "snapchat", "Googlebot"]
-      let isMetadataBot = metadataBots.some(bot => ua?.indexOf(bot) != -1);
+    if (isBlockedAgent(ua, parseAgentList(Deno.env.get("UA_ARRAY")))) {
+      return new Response("", { status: 401 });
+    }
 
-      if (isMetadataBot && path.endsWith("/")) {
-        let info = pathToMetadata(path)
-
-        let content = ['<meta charset="UTF-8">'];
-        if (info.title) { content.push(`<title>${escapeHTML(info.title)}</title>`,mProp("og:title", info.title)) }
-        if (info.s) { content.push(mProp("og:site_name", info.s)) }
-        if (info.t) { content.push(mProp("og:type", info.t)) }
-        if (info.d) { content.push(mProp("og:description", info.d),mName("description",info.d)) }
-        if (info.c) { content.push(mName("theme-color","#" + info.c)) }
-
-        if (info.i) {
-          info.i = decodeURL(info.i)
-          if (!info.i.startsWith("http")) info.i = "/.netlify/functions/rasterize/" + info.i
-          content.push(mProp("og:image", info.i));
-          if (info.iw) content.push(mProp("og:image:width", info.iw));
-          if (info.ih) content.push(mProp("og:image:height", info.ih));
-          content.push(mName("twitter:card", "summary_large_image"));
-        } 
-        if (info.v) {
-          content.push(mProp("og:video", decodeURL(info.v)));
-          if (info.vw) content.push(mProp("og:video:width", info.vw));
-          if (info.vh) content.push(mProp("og:video:height", info.vh));
-        } 
-        if (info.f) { // Favicon: URL Encoded
-          if (info.f.length > 9){
-            info.f = decodeURL(info.f);
-            content.push(`<link rel="icon" type="image/png" href="${escapeHTML(info.f)}">`);
-          } else {
-            let codepoints = Array.from(info.f).map(c => c.codePointAt(0).toString(16));
-            content.push(`<link rel="icon" type="image/png" href="https://fonts.gstatic.com/s/e/notoemoji/14.0/${codepoints.join("_")}/128.png">`);
-          }
-        }
-        // content.push(mProp("og:url", request.url)`);
-        
-        console.log(["Metadata Request", JSON.stringify(info), geo, ua].join('\t')); 
-        return new Response(content.join("\n"), {
+    if (path != "/") {
+      if (isMetadataBot(ua) && path.endsWith("/")) {
+        const info = pathToMetadata(path);
+        console.log(["Metadata Request", JSON.stringify(info), geo, ua].join("\t"));
+        return new Response(renderMetadata(info, url.origin), {
           headers: { "content-type": "text/html" },
         });
-      } 
+      }
     } else {
-      console.log(["Request", path, geo, request.headers.get("referer"), ua].join('\t'));
+      console.log(["Request", path, geo, request.headers.get("referer"), ua].join("\t"));
     }
   } catch (e) {
-    console.log("Error:", request.url, e)
+    console.log("Error:", request.url, e);
   }
-}
+};

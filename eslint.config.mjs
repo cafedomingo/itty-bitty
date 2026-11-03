@@ -44,6 +44,12 @@ export default [
     },
   },
   {
+    files: ["server/**/*.mjs", "lib/**/*.{mjs,cjs}"],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
+  {
     files: ["functions/**/*.js", "build-v2.js"],
     languageOptions: {
       sourceType: "commonjs",

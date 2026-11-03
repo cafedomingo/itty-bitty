@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+.DS_Store
+.git
+.github
+.gitignore
+.vscode
+netlify
+functions
+tests
+test-results
+playwright-report
